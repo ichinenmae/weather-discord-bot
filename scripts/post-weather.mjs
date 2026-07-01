@@ -86,9 +86,15 @@ function makeOpenMeteoUrl() {
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, options);
   const text = await res.text();
+
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${text.slice(0, 500)}`);
+    throw new Error(`HTTP ${res.status}: ${text}`);
   }
+
+  if (!text.trim()) {
+    return null;
+  }
+
   return JSON.parse(text);
 }
 
