@@ -9,7 +9,7 @@ on:
         default: 'auto'
   schedule:
     # 04:20 / 10:20 / 16:20 / 22:20
-    # 04:00 は ①②③、その他は ①のみを投稿
+    # 04:20 は ①②③、その他は ①のみを投稿
     - cron: '20 4,10,16,22 * * *'
       timezone: 'Asia/Tokyo'
 
@@ -32,6 +32,7 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           TIMEZONE: 'Asia/Tokyo'
           REPORT_MODE: ${{ github.event.inputs.report_mode || 'auto' }}
-          RAIN_MM_THRESHOLD: '1'
+          RAIN_MM_THRESHOLD_24H: '0.5'
+          RAIN_MM_THRESHOLD_LONG: '1'
           STRONG_WIND_THRESHOLD: '8'
           STRONG_GUST_THRESHOLD: '15'
