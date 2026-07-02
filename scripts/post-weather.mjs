@@ -257,6 +257,10 @@ function buildTsurumi24hReport(data) {
   lines.push(`${dateTimeLabel()} 現在`);
   lines.push(`現在: ${wemojiDesc(current.weather_code)} / 🌡️ ${fmt1(current.temperature_2m, '℃')} / 体感${fmt1(current.apparent_temperature, '℃')} / 💧 湿度${fmt0(current.relative_humidity_2m, '%')} / 🌬️ 風${fmt1(current.wind_speed_10m, 'm/s')} / 突風${fmt1(current.wind_gusts_10m, 'm/s')}`);
   lines.push(`24時間内: 💧 最大降水量${fmt1(maxPrecip, 'mm/h')} / 最大降水確率${fmt0(maxPop, '%')} / 🌬️ 最大風速${fmt1(maxWind, 'm/s')} / 最大突風${fmt1(maxGust, 'm/s')}`);
+  
+  lines.push('');
+  lines.push('');
+  
   // 3時間ごとを基本に、降水量0.5mm/h以上または強風の時間を追加表示する。
   // 投稿文には抽出条件の説明を入れず、各時刻の内容だけを出す。
   for (const r of displayRows) {
