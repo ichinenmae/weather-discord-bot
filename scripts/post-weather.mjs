@@ -40,6 +40,31 @@ function wdesc(code) {
   return weatherCodeMap.get(Number(code)) ?? `天気コード${code}`;
 }
 
+function weatherEmoji(code) {
+  const c = Number(code);
+  if ([95, 96, 99].includes(c)) return '⛈️';
+  if ([71, 73, 75, 77, 85, 86].includes(c)) return '❄️';
+  if ([63, 65, 67, 80, 81, 82].includes(c)) return '🌧️';
+  if ([51, 53, 55, 56, 57, 61, 66].includes(c)) return '☔';
+  if ([45, 48].includes(c)) return '🌫️';
+  if (c === 0 || c === 1) return '☀️';
+  if (c === 2) return '🌤️';
+  if (c === 3) return '☁️';
+  return '🌦️';
+}
+
+function wemojiDesc(code) {
+  return `${weatherEmoji(code)} ${wdesc(code)}`;
+}
+
+function rainEmoji(mm) {
+  return Number(mm ?? 0) > 0 ? '💧' : '降水';
+}
+
+function windEmoji(wind, gust) {
+  return isStrongWindHour({ wind, gust }) ? '⚠️🌬️' : '🌬️';
+}
+
 function nowJst() {
   // GitHub Actionsの実行環境はUTC想定なので、JST判定用にIntlで部品を取り出す。
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -230,17 +255,14 @@ function buildTsurumi24hReport(data) {
   const lines = [];
   lines.push(`**① 鶴見駅 24時間詳細予報**`);
   lines.push(`${dateTimeLabel()} 現在`);
-  lines.push(`現在: ${wdesc(current.weather_code)} / ${fmt1(current.temperature_2m, '℃')} / 体感${fmt1(current.apparent_temperature, '℃')} / 湿度${fmt0(current.relative_humidity_2m, '%')} / 風${fmt1(current.wind_speed_10m, 'm/s')} / 突風${fmt1(current.wind_gusts_10m, 'm/s')}`);
-  lines.push(`24時間内: 最大降水量${fmt1(maxPrecip, 'mm/h')} / 最大降水確率${fmt0(maxPop, '%')} / 最大風速${fmt1(maxWind, 'm/s')} / 最大突風${fmt1(maxGust, 'm/s')}`);
-  lines.push(`表示: 3時間ごと + 降水量${CONFIG.rainMmThreshold24h}mm以上 + 風${CONFIG.strongWindThreshold}m/s以上または突風${CONFIG.strongGustThreshold}m/s以上`);
+  lines.push(`現在: ${wemojiDesc(current.weather_code)} / 🌡️ ${fmt1(current.temperature_2m, '℃')} / 体感${fmt1(current.apparent_temperature, '℃')} / 💧 湿度${fmt0(current.relative_humidity_2m, '%')} / 🌬️ 風${fmt1(current.wind_speed_10m, 'm/s')} / 突風${fmt1(current.wind_gusts_10m, 'm/s')}`);
+  lines.push(`24時間内: 💧 最大降水量${fmt1(maxPrecip, 'mm/h')} / 最大降水確率${fmt0(maxPop, '%')} / 🌬️ 最大風速${fmt1(maxWind, 'm/s')} / 最大突風${fmt1(maxGust, 'm/s')}`);
+  // 3時間ごとを基本に、降水量0.5mm/h以上または強風の時間を追加表示する。
+  // 投稿文には抽出条件の説明を入れず、各時刻の内容だけを出す。
   for (const r of displayRows) {
-    const tags = [];
-    if (isRainHour24h(r)) tags.push('雨');
-    if (isStrongWindHour(r)) tags.push('風');
-    const tagText = tags.length ? `【${tags.join('・')}】` : '';
-    lines.push(`・${hourLabel(r.time)} ${tagText}`);
-    lines.push(`  天気: ${wdesc(r.code)} / 気温: ${fmt1(r.temp, '℃')} / 体感: ${fmt1(r.apparent, '℃')}`);
-    lines.push(`  降水: ${fmt1(r.precipitation, 'mm/h')} / 確率: ${fmt0(r.pop, '%')} / 風: ${fmt1(r.wind, 'm/s')} / 突風: ${fmt1(r.gust, 'm/s')}`);
+    lines.push(`・${hourLabel(r.time)}`);
+    lines.push(`  ${wemojiDesc(r.code)}　🌡️: ${fmt1(r.temp, '℃')} / 体感: ${fmt1(r.apparent, '℃')}　💧: ${fmt1(r.precipitation, 'mm/h')} / 確率: ${fmt0(r.pop, '%')}　${windEmoji(r.wind, r.gust)}: ${fmt1(r.wind, 'm/s')} / 突風: ${fmt1(r.gust, 'm/s')}`);
+    lines.push('');
   }
   return trimDiscord(lines.join('\n'));
 }
@@ -254,16 +276,17 @@ function buildNextRainReport(data) {
   return [
     '**②-1 鶴見駅 次の雨予報**',
     `次の降水量${CONFIG.rainMmThresholdLong}mm以上: ${hourLabel(rain.time)}`,
-    `${wdesc(rain.code)} / 降水量${fmt1(rain.precipitation, 'mm/h')} / 降水確率${fmt0(rain.pop, '%')} / 風${fmt1(rain.wind, 'm/s')} / 突風${fmt1(rain.gust, 'm/s')}`,
+    `${wemojiDesc(rain.code)} / 💧 降水量${fmt1(rain.precipitation, 'mm/h')} / 降水確率${fmt0(rain.pop, '%')} / 🌬️ 風${fmt1(rain.wind, 'm/s')} / 突風${fmt1(rain.gust, 'm/s')}`,
   ].join('\n');
 }
 
 function buildTsurumi4DayReport(data) {
   const lines = ['**②-3 鶴見駅 4日先までの予報**'];
   for (const r of dailyRows(data).slice(0, 4)) {
-    lines.push(`・${dateLabel(r.date)}: ${wdesc(r.code)}`);
-    lines.push(`  気温: 最高${fmt1(r.tmax, '℃')} / 最低${fmt1(r.tmin, '℃')} / 平均${fmt1(r.tmean, '℃')}`);
-    lines.push(`  降水: ${fmt1(r.precip, 'mm')} / 確率: ${fmt0(r.popMax, '%')} / 風: ${fmt1(r.windMax, 'm/s')} / 突風: ${fmt1(r.gustMax, 'm/s')}`);
+    lines.push(`・${dateLabel(r.date)}: ${wemojiDesc(r.code)}`);
+    lines.push(`  🌡️ 気温: 最高${fmt1(r.tmax, '℃')} / 最低${fmt1(r.tmin, '℃')} / 平均${fmt1(r.tmean, '℃')}`);
+    lines.push(`  💧 降水: ${fmt1(r.precip, 'mm')} / 確率: ${fmt0(r.popMax, '%')} / 🌬️ 風: ${fmt1(r.windMax, 'm/s')} / 突風: ${fmt1(r.gustMax, 'm/s')}`);
+    lines.push('');
   }
   return lines.join('\n');
 }
@@ -303,7 +326,6 @@ function buildTemperatureCompareReport(forecast, archive) {
   lines.push(`昨日実績: 最高${fmt1(yesterday.tmax, '℃')} / 最低${fmt1(yesterday.tmin, '℃')} / 平均${fmt1(yesterday.tmean, '℃')}`);
   lines.push(`昨日差分: 最高${diffText(today.tmax, yesterday.tmax)} / 最低${diffText(today.tmin, yesterday.tmin)} / 平均${diffText(today.tmean, yesterday.tmean)}`);
   lines.push(`過去3日平均との差: ${diffText(today.tmean, avg3)} / 過去7日平均との差: ${diffText(today.tmean, avg7)}`);
-  lines.push('※過去値はOpen-Meteoの再解析データ。');
   return lines.join('\n');
 }
 
@@ -314,8 +336,9 @@ function buildSimpleAreaReport(groupTitle, forecastPairs) {
     const today = rows[0];
     const tomorrow = rows[1];
     lines.push(`・${location.name}`);
-    lines.push(`  今日: ${wdesc(today.code)} / 最高${fmt1(today.tmax, '℃')} / 降水${fmt1(today.precip, 'mm')} / 確率${fmt0(today.popMax, '%')} / 風${fmt1(today.windMax, 'm/s')}`);
-    lines.push(`  明日: ${wdesc(tomorrow.code)} / 最高${fmt1(tomorrow.tmax, '℃')} / 降水${fmt1(tomorrow.precip, 'mm')} / 確率${fmt0(tomorrow.popMax, '%')}`);
+    lines.push(`  今日: ${wemojiDesc(today.code)} / 🌡️ 最高${fmt1(today.tmax, '℃')} / 💧 降水${fmt1(today.precip, 'mm')} / 確率${fmt0(today.popMax, '%')} / 🌬️ 風${fmt1(today.windMax, 'm/s')}`);
+    lines.push(`  明日: ${wemojiDesc(tomorrow.code)} / 🌡️ 最高${fmt1(tomorrow.tmax, '℃')} / 💧 降水${fmt1(tomorrow.precip, 'mm')} / 確率${fmt0(tomorrow.popMax, '%')}`);
+    lines.push('');
   }
   return trimDiscord(lines.join('\n'));
 }
