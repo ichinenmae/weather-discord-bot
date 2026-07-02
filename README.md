@@ -1,75 +1,62 @@
 # weather-discord-bot
 
-GitHub Actions で天気を取得し、Discord Webhook に投稿する最小構成です。Codex は不要です。
+GitHub ActionsでOpen-Meteoから天気を取得し、Discord Webhookへ投稿する最小構成です。
 
-## 使うもの
+## 投稿スケジュール
 
-- GitHub リポジトリ
-- Discord Webhook URL
-- Open-Meteo API（APIキー不要）
+- JST 04:00: ① 鶴見駅24時間詳細 + ② 鶴見駅の雨・気温比較・4日予報 + ③ 周辺駅簡易予報
+- JST 10:00: ①のみ
+- JST 16:00: ①のみ
+- JST 22:00: ①のみ
 
-## ファイル構成
+## 仕様
+
+### ① 鶴見駅周辺の向こう24時間の詳細予報
+
+- 3時間ごとに表示
+- ただし、次の条件に当てはまる時間は1時間単位で追加表示
+  - 降水量 0.5mm/h 以上
+  - 風速 8m/s 以上
+  - 突風 15m/s 以上
+- 風速は m/s 表示
+
+### ② 鶴見駅周辺
+
+- 4日先までで次に降水量1mm/h以上が出る日時
+- 前日との最高・最低・平均気温比較
+- 過去3日/7日の平均気温との比較
+- 4日先までの日別予報
+- 過去値はOpen-Meteoの再解析データを使用
+
+### ③ 周辺駅の簡易予報
+
+- 川崎駅、横浜駅、武蔵小杉駅、蒲田駅
+- 二俣川駅、東戸塚駅、水道橋駅
+- 当日と翌日の日別予報
+
+## GitHub Secrets
+
+Repository secrets に以下を登録してください。
 
 ```text
-.github/workflows/post-weather.yml
-scripts/post-weather.mjs
-package.json
-```
-
-## Discord Webhook URL の作成
-
-Discord の投稿したいチャンネルで以下を行います。
-
-1. チャンネル設定
-2. 連携サービス
-3. ウェブフック
-4. 新しいウェブフック
-5. Webhook URL をコピー
-
-## GitHub Secrets に登録
-
-GitHub リポジトリで以下を開きます。
-
-`Settings` → `Secrets and variables` → `Actions` → `New repository secret`
-
-登録内容:
-
-- Name: `DISCORD_WEBHOOK_URL`
-- Secret: Discord Webhook URL
-
-## 投稿時刻の変更
-
-`.github/workflows/post-weather.yml` のこの部分を編集します。
-
-```yaml
-schedule:
-  - cron: '0 10,16,21 * * *'
-    timezone: 'Asia/Tokyo'
-```
-
-上記は毎日 10:00 / 16:00 / 21:00 に実行します。
-
-## 地点の変更
-
-`.github/workflows/post-weather.yml` の `LATITUDE` / `LONGITUDE` を変更します。
-
-```yaml
-LATITUDE: '35.5086'
-LONGITUDE: '139.6763'
-PLACE_NAME: '横浜市鶴見区付近'
+DISCORD_WEBHOOK_URL
 ```
 
 ## 手動実行
 
-GitHub の `Actions` タブで `Post weather to Discord` を選び、`Run workflow` を押します。
+Actions → Post weather to Discord → Run workflow
 
-## ローカルで試す場合
+`report_mode` は以下を指定できます。
 
-PowerShell 例:
-
-```powershell
-$env:DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/...."
-npm run post-weather
+```text
+auto      04時なら全部、それ以外なら①のみ
+full      ①②③を全部投稿
+tsurumi24 ①のみ投稿
 ```
 
-Webhook URL は公開リポジトリに直接書かないでください。
+## 降水量しきい値
+
+```text
+24時間詳細予報: 0.5mm/h以上で1時間単位表示
+4日先までの次の雨予報: 1.0mm/h以上
+```
