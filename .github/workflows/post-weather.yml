@@ -2,14 +2,21 @@ name: Post weather to Discord
 
 on:
   workflow_dispatch:
+    inputs:
+      report_mode:
+        description: 'auto / full / tsurumi24'
+        required: false
+        default: 'auto'
   schedule:
-    - cron: '0 10,16,21 * * *'
+    # JST 04:00 / 10:00 / 16:00 / 22:00
+    # 04:00 は ①②③、その他は ①のみを投稿
+    - cron: '0 4,10,16,22 * * *'
       timezone: 'Asia/Tokyo'
 
 jobs:
   post-weather:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,10 +26,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Post weather
+        run: npm run post-weather
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: npm run post-weather
+          TIMEZONE: 'Asia/Tokyo'
+          REPORT_MODE: ${{ github.event.inputs.report_mode || 'auto' }}
+          RAIN_MM_THRESHOLD: '1'
+          STRONG_WIND_THRESHOLD: '8'
+          STRONG_GUST_THRESHOLD: '15'
