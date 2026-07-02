@@ -233,13 +233,15 @@ function buildTsurumi24hReport(data) {
   lines.push(`現在: ${wdesc(current.weather_code)} / ${fmt1(current.temperature_2m, '℃')} / 体感${fmt1(current.apparent_temperature, '℃')} / 湿度${fmt0(current.relative_humidity_2m, '%')} / 風${fmt1(current.wind_speed_10m, 'm/s')} / 突風${fmt1(current.wind_gusts_10m, 'm/s')}`);
   lines.push(`24時間内: 最大降水量${fmt1(maxPrecip, 'mm/h')} / 最大降水確率${fmt0(maxPop, '%')} / 最大風速${fmt1(maxWind, 'm/s')} / 最大突風${fmt1(maxGust, 'm/s')}`);
   lines.push(`表示: 3時間ごと + 降水量${CONFIG.rainMmThreshold24h}mm以上 + 風${CONFIG.strongWindThreshold}m/s以上または突風${CONFIG.strongGustThreshold}m/s以上`);
-  lines.push('```');
-  lines.push('日時        天気        気温  体感  降水/確率  風/突風');
   for (const r of displayRows) {
-    const mark = isRainHour24h(r) ? '雨' : isStrongWindHour(r) ? '風' : '  ';
-    lines.push(`${hourLabel(r.time)} ${mark} ${wdesc(r.code).padEnd(8, '　').slice(0, 8)} ${fmt1(r.temp, '℃').padStart(6)} ${fmt1(r.apparent, '℃').padStart(6)} ${fmt1(r.precipitation, 'mm').padStart(7)}/${fmt0(r.pop, '%').padStart(4)} ${fmt1(r.wind).padStart(4)}/${fmt1(r.gust)}m/s`);
+    const tags = [];
+    if (isRainHour24h(r)) tags.push('雨');
+    if (isStrongWindHour(r)) tags.push('風');
+    const tagText = tags.length ? `【${tags.join('・')}】` : '';
+    lines.push(`・${hourLabel(r.time)} ${tagText}`);
+    lines.push(`  天気: ${wdesc(r.code)} / 気温: ${fmt1(r.temp, '℃')} / 体感: ${fmt1(r.apparent, '℃')}`);
+    lines.push(`  降水: ${fmt1(r.precipitation, 'mm/h')} / 確率: ${fmt0(r.pop, '%')} / 風: ${fmt1(r.wind, 'm/s')} / 突風: ${fmt1(r.gust, 'm/s')}`);
   }
-  lines.push('```');
   return trimDiscord(lines.join('\n'));
 }
 
@@ -257,11 +259,12 @@ function buildNextRainReport(data) {
 }
 
 function buildTsurumi4DayReport(data) {
-  const lines = ['**②-3 鶴見駅 4日先までの予報**', '```', '日付        天気        最高/最低/平均  降水量/確率  風/突風'];
+  const lines = ['**②-3 鶴見駅 4日先までの予報**'];
   for (const r of dailyRows(data).slice(0, 4)) {
-    lines.push(`${dateLabel(r.date)} ${wdesc(r.code).padEnd(8, '　').slice(0, 8)} ${fmt1(r.tmax).padStart(4)}/${fmt1(r.tmin).padStart(4)}/${fmt1(r.tmean).padStart(4)}℃ ${fmt1(r.precip, 'mm').padStart(7)}/${fmt0(r.popMax, '%').padStart(4)} ${fmt1(r.windMax).padStart(4)}/${fmt1(r.gustMax)}m/s`);
+    lines.push(`・${dateLabel(r.date)}: ${wdesc(r.code)}`);
+    lines.push(`  気温: 最高${fmt1(r.tmax, '℃')} / 最低${fmt1(r.tmin, '℃')} / 平均${fmt1(r.tmean, '℃')}`);
+    lines.push(`  降水: ${fmt1(r.precip, 'mm')} / 確率: ${fmt0(r.popMax, '%')} / 風: ${fmt1(r.windMax, 'm/s')} / 突風: ${fmt1(r.gustMax, 'm/s')}`);
   }
-  lines.push('```');
   return lines.join('\n');
 }
 
@@ -305,16 +308,15 @@ function buildTemperatureCompareReport(forecast, archive) {
 }
 
 function buildSimpleAreaReport(groupTitle, forecastPairs) {
-  const lines = [`**${groupTitle}**`, '```', '地点        今日                         明日'];
+  const lines = [`**${groupTitle}**`];
   for (const [location, data] of forecastPairs) {
     const rows = dailyRows(data);
     const today = rows[0];
     const tomorrow = rows[1];
-    const todayText = `${wdesc(today.code)} 最高${fmt1(today.tmax, '℃')} 降水${fmt1(today.precip, 'mm')}/${fmt0(today.popMax, '%')} 風${fmt1(today.windMax, 'm/s')}`;
-    const tomorrowText = `${wdesc(tomorrow.code)} 最高${fmt1(tomorrow.tmax, '℃')} 降水${fmt1(tomorrow.precip, 'mm')}/${fmt0(tomorrow.popMax, '%')}`;
-    lines.push(`${location.name.padEnd(6, '　').slice(0, 6)} ${todayText.padEnd(28, ' ')} ${tomorrowText}`);
+    lines.push(`・${location.name}`);
+    lines.push(`  今日: ${wdesc(today.code)} / 最高${fmt1(today.tmax, '℃')} / 降水${fmt1(today.precip, 'mm')} / 確率${fmt0(today.popMax, '%')} / 風${fmt1(today.windMax, 'm/s')}`);
+    lines.push(`  明日: ${wdesc(tomorrow.code)} / 最高${fmt1(tomorrow.tmax, '℃')} / 降水${fmt1(tomorrow.precip, 'mm')} / 確率${fmt0(tomorrow.popMax, '%')}`);
   }
-  lines.push('```');
   return trimDiscord(lines.join('\n'));
 }
 
