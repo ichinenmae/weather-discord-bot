@@ -276,17 +276,17 @@ function buildNextRainReport(data) {
   const rows = hourlyRows(data).filter(r => new Date(`${r.time}+09:00`) >= new Date()).slice(0, 24 * 4);
   const rain = rows.find(isRainHourLong);
   if (!rain) {
-    return `**②-1 鶴見駅 次の雨予報**\n4日先までに、降水量${CONFIG.rainMmThresholdLong}mm以上の時間帯はありません。`;
+    return `**②-1 鶴見駅 次の雨予報**\n4\n4日先までに、降水量${CONFIG.rainMmThresholdLong}mm以上の時間帯はありません。`;
   }
   return [
-    '**②-1 鶴見駅 次の雨予報**',
+    '**②-1 鶴見駅 次の雨予報**', '',
     `次の降水量${CONFIG.rainMmThresholdLong}mm以上: ${hourLabel(rain.time)}`,
     `${wemojiDesc(rain.code)} / 💧 降水量${fmt1(rain.precipitation, 'mm/h')} / 降水確率${fmt0(rain.pop, '%')} / 🌬️ 風${fmt1(rain.wind, 'm/s')} / 突風${fmt1(rain.gust, 'm/s')}`,
   ].join('\n');
 }
 
 function buildTsurumi4DayReport(data) {
-  const lines = ['**②-3 鶴見駅 4日先までの予報**'];
+  const lines = ['**②-3 鶴見駅 4日先までの予報**', ''];
   for (const r of dailyRows(data).slice(0, 4)) {
     lines.push(`・${dateLabel(r.date)}: ${wemojiDesc(r.code)}`);
     lines.push(`  🌡️ 気温: 最高${fmt1(r.tmax, '℃')} / 最低${fmt1(r.tmin, '℃')} / 平均${fmt1(r.tmean, '℃')}`);
@@ -322,7 +322,7 @@ function buildTemperatureCompareReport(forecast, archive) {
   const avg3 = average(last3.map(d => d.tmean));
   const avg7 = average(last7.map(d => d.tmean));
 
-  const lines = ['**②-2 鶴見駅 気温比較**'];
+  const lines = ['**②-2 鶴見駅 気温比較**', ''];
   if (!yesterday) {
     lines.push('過去実績データを取得できませんでした。');
     return lines.join('\n');
@@ -335,7 +335,7 @@ function buildTemperatureCompareReport(forecast, archive) {
 }
 
 function buildSimpleAreaReport(groupTitle, forecastPairs) {
-  const lines = [`**${groupTitle}**`];
+  const lines = [`**${groupTitle}**`, ''];
   for (const [location, data] of forecastPairs) {
     const rows = dailyRows(data);
     const today = rows[0];
