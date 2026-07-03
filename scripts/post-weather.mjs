@@ -276,7 +276,7 @@ function buildNextRainReport(data) {
   const rows = hourlyRows(data).filter(r => new Date(`${r.time}+09:00`) >= new Date()).slice(0, 24 * 4);
   const rain = rows.find(isRainHourLong);
   if (!rain) {
-    return `**②-1 鶴見駅 次の雨予報**\n4\n4日先までに、降水量${CONFIG.rainMmThresholdLong}mm以上の時間帯はありません。`;
+    return `**②-1 鶴見駅 次の雨予報**\n\n4日先までに、降水量${CONFIG.rainMmThresholdLong}mm以上の時間帯はありません。`;
   }
   return [
     '**②-1 鶴見駅 次の雨予報**', '',
